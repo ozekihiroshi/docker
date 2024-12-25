@@ -1,0 +1,203 @@
+services:
+  traefik:
+    image: traefik:v3.2
+    command:
+      - "--api.insecure=true" # ダッシュボードを有効にする (本番環境では適切な認証を追加)
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080" # Traefik ダッシュボード
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`traefik.gtc.ce.ac.bw`)"
+      - "traefik.http.services.api.loadbalancer.server.port=8080"
+
+  growi:
+    image: weseek/growi:7
+    ports:
+      - 3000:3000    # localhost only by default
+    links:
+      - mongo:mongo
+      - elasticsearch:elasticsearch
+    depends_on:
+        mongo:
+          condition: service_healthy
+        elasticsearch:
+          condition: service_healthy
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/growi
+      - ELASTICSEARCH_URI=http://elasticsearch:9200/growi
+      - PASSWORD_SEED=changeme
+      - PORT=3000
+      - BIND_ADDRESS=0.0.0.0
+
+      # - FILE_UPLOAD=mongodb   # activate this line if you use MongoDB GridFS rather than AWS
+      # - FILE_UPLOAD=local     # activate this line if you use local storage of server rather than AWS
+      # - MATHJAX=1             # activate this line if you want to use MathJax
+      # - PLANTUML_URI=http://  # activate this line and specify if you use your own PlantUML server rather than public plantuml.com
+      # - FORCE_WIKI_MODE='public'    # activate this line to force wiki public mode
+      # - FORCE_WIKI_MODE='private'   # activate this line to force wiki private mode
+
+    entrypoint: "/docker-entrypoint.sh"
+    command: ["npm run migrate && node -r dotenv-flow/config --expose_gc dist/server/app.js"]
+
+    restart: unless-stopped
+    volumes:
+      - growi_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"  # Traefikが利用するネットワークを指定
+      - "traefik.http.routers.growi.rule=Host(`growi.gtc.ce.ac.bw`)"
+      - "traefik.http.services.growi.loadbalancer.server.port=3000"  # ポート8081を明示
+    networks:
+      traefik_network:
+        ipv4_address: 192.168.100.31
+
+
+  mongo:
+    image: mongo:4.4
+    restart: unless-stopped
+    volumes:
+      - mongo_configdb:/data/configdb
+      - mongo_db:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.runCommand('ping').ok", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - traefik_network
+
+  elasticsearch:
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    build:
+      context: ./elasticsearch/v7
+      dockerfile: ./Dockerfile
+    environment:
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"  # increase amount if you have enough memory
+      - LOG4J_FORMAT_MSG_NO_LOOKUPS=true # CVE-2021-44228 mitigation for Elasticsearch <= 6.8.20/7.16.0
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: unless-stopped
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+      - ./elasticsearch/v7/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health?pretty"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+    networks:
+      - traefik_network
+
+  postgresql-server:
+    image: postgres:latest
+    container_name: postgresql-server
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    networks:
+      - traefik_network
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:latest
+    container_name: zabbix-server
+    restart: unless-stopped
+    depends_on:
+      - postgresql-server
+    environment:
+      DB_SERVER_HOST: postgresql-server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "10051:10051"
+    volumes:
+      - zabbix-server-data:/var/lib/zabbix
+      - zabbix-snmptraps-data:/var/lib/zabbix/snmptraps
+      - zabbix-export-data:/var/lib/zabbix/export
+    networks:
+      - traefik_network
+
+  zabbix-web-nginx-pgsql:
+    image: zabbix/zabbix-web-nginx-pgsql:latest
+    container_name: zabbix-web
+    restart: unless-stopped
+    depends_on:
+      - postgresql-server
+      - zabbix-server
+    environment:
+      DB_SERVER_HOST: postgresql-server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      ZBX_SERVER_HOST: zabbix-server
+      PHP_TZ: ${PHP_TZ}
+    ports:
+      - "8081:8081"
+    volumes:
+      - zabbix-web-data:/usr/share/zabbix
+      - ./nginx.conf:/etc/nginx/http.d/nginx.conf:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"  # Traefikが利用するネットワークを指定
+      - "traefik.http.routers.zabbix-web.rule=Host(`zabbix-web.gtc.ce.ac.bw`)"
+      - "traefik.http.services.zabbix-web.loadbalancer.server.port=8081"  # ポート8081を明示
+    networks:
+      traefik_network:
+        ipv4_address: 192.168.100.21
+
+  zabbix-agent:
+    image: zabbix/zabbix-agent:latest
+    container_name: zabbix-agent
+    restart: unless-stopped
+    depends_on:
+      - zabbix-server
+    environment:
+      ZBX_HOSTNAME: "zabbix-docker-agent"
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_SERVER_PORT: '10051'
+      ZBX_SERVER_ACTIVE:  zabbix-server
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run
+    privileged: true
+    networks:
+      traefik_network:
+        ipv4_address: 192.168.100.11
+
+volumes:
+  postgresql-data:
+  zabbix-server-data:
+  zabbix-snmptraps-data:
+  zabbix-export-data:
+  zabbix-web-data:
+  growi_data:
+  mongo_configdb:
+  mongo_db:
+  es_data:
+
+
+networks:
+  traefik_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
+
+
