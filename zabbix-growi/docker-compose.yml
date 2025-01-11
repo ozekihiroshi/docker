@@ -19,7 +19,7 @@ services:
       - "traefik.http.services.api.loadbalancer.server.port=8080"
 
   growi:
-    image: weseek/growi:7
+    image: weseek/growi:6
     ports:
       - 3000:3000    # localhost only by default
     links:
@@ -36,6 +36,8 @@ services:
       - PASSWORD_SEED=changeme
       - PORT=3000
       - BIND_ADDRESS=0.0.0.0
+      - WEBSOCKET=true
+      - APP_CORS_ALLOW_ORIGIN=*
 
       # - FILE_UPLOAD=mongodb   # activate this line if you use MongoDB GridFS rather than AWS
       # - FILE_UPLOAD=local     # activate this line if you use local storage of server rather than AWS
@@ -52,9 +54,17 @@ services:
       - growi_data:/data
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=traefik_network"  # Traefikが利用するネットワークを指定
+      - "traefik.docker.network=traefik_network"
       - "traefik.http.routers.growi.rule=Host(`growi.gtc.ce.ac.bw`)"
-      - "traefik.http.services.growi.loadbalancer.server.port=3000"  # ポート8081を明示
+      - "traefik.http.routers.growi.entrypoints=web"
+      - "traefik.http.services.growi.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolalloworiginlist=*"
+      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolallowmethods=*"
+      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.growi-websocket.headers.addvaryheader=true"
+      - "traefik.http.routers.growi.middlewares=growi-websocket"
     networks:
       traefik_network:
         ipv4_address: 192.168.100.31
