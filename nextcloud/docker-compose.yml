@@ -11,7 +11,6 @@ services:
       - ./data:/var/www/html
       - ./php/php.ini:/usr/local/etc/php/php.ini
       - ./sites-available/000-default.conf:/etc/apache2/sites-available/000-default.conf
-
     depends_on:
       - nextcloud-db
     restart: unless-stopped
@@ -19,9 +18,13 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_network"
       - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.gtc.ce.ac.bw`)"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud.tls=true"
       - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.redirect-to-https.redirectScheme.scheme=https" # リダイレクト用
     networks:
-      - traefik_network
+      traefik_network:
+        ipv4_address: 192.168.100.51
 
   nextcloud-db:
     image: mariadb:latest
@@ -34,9 +37,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./db_data:/var/lib/mysql
-
     networks:
-      - traefik_network
+      traefik_network:
+        ipv4_address: 192.168.100.61
 
 networks:
   traefik_network:

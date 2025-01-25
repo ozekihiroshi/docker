@@ -2,21 +2,30 @@ services:
   traefik:
     image: traefik:v3.2
     command:
-      - "--api.insecure=true" # ダッシュボードを有効にする (本番環境では適切な認証を追加)
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
+      - "--api.insecure=true"                           # ダッシュボードを有効化 (認証がないため本番では注意)
+      - "--providers.docker=true"                      # Docker プロバイダーを有効化
+      - "--entrypoints.web.address=:80"                # HTTP 用エントリポイント
+      - "--entrypoints.websecure.address=:443"         # HTTPS 用エントリポイント
+      - "--certificatesResolvers.manual.acme.tlsChallenge=true" # 証明書解決 (手動証明書対応)
+      - "--providers.file.filename=/etc/traefik/dynamic.yaml"
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080" # Traefik ダッシュボード
     restart: unless-stopped
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./certs/:/etc/traefik/certs:ro"
+      - "./dynamic.yaml:/etc/traefik/dynamic.yaml:ro"
     networks:
       - traefik_network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`traefik.gtc.ce.ac.bw`)"
-      - "traefik.http.services.api.loadbalancer.server.port=8080"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.gtc.ce.ac.bw`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.enable=true"
 
   growi:
     image: weseek/growi:6
@@ -56,15 +65,10 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_network"
       - "traefik.http.routers.growi.rule=Host(`growi.gtc.ce.ac.bw`)"
-      - "traefik.http.routers.growi.entrypoints=web"
+      - "traefik.http.routers.growi.entrypoints=websecure"
+      - "traefik.http.routers.growi.tls=true"
       - "traefik.http.services.growi.loadbalancer.server.port=3000"
-      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolalloworiginlist=*"
-      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolallowheaders=*"
-      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolallowmethods=*"
-      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolallowcredentials=true"
-      - "traefik.http.middlewares.growi-websocket.headers.accesscontrolmaxage=100"
-      - "traefik.http.middlewares.growi-websocket.headers.addvaryheader=true"
-      - "traefik.http.routers.growi.middlewares=growi-websocket"
+      - "traefik.http.middlewares.redirect-to-https.redirectScheme.scheme=https" # リダイレクト用
     networks:
       traefik_network:
         ipv4_address: 192.168.100.31
@@ -166,9 +170,12 @@ services:
       - ./nginx.conf:/etc/nginx/http.d/nginx.conf:ro
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=traefik_network"  # Traefikが利用するネットワークを指定
+      - "traefik.docker.network=traefik_network" # Traefik が使用するネットワーク
       - "traefik.http.routers.zabbix-web.rule=Host(`zabbix-web.gtc.ce.ac.bw`)"
-      - "traefik.http.services.zabbix-web.loadbalancer.server.port=8081"  # ポート8081を明示
+      - "traefik.http.routers.zabbix-web.entrypoints=websecure" # HTTPS のエントリポイント
+      - "traefik.http.routers.zabbix-web.tls=true" # HTTPS を有効化
+      - "traefik.http.services.zabbix-web.loadbalancer.server.port=8081" # サービスのポート
+      - "traefik.http.middlewares.redirect-to-https.redirectScheme.scheme=https" # リダイレクト用
     networks:
       traefik_network:
         ipv4_address: 192.168.100.21
@@ -192,6 +199,7 @@ services:
       traefik_network:
         ipv4_address: 192.168.100.11
 
+
 volumes:
   postgresql-data:
   zabbix-server-data:
@@ -210,5 +218,4 @@ networks:
     ipam:
       config:
         - subnet: 192.168.100.0/24
-
 
