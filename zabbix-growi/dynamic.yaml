@@ -1,0 +1,27 @@
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  routers:
+    http-catchall:
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+      rule: "HostRegexp(`{host:.+}`)"
+      service: noop
+
+  services:
+    noop:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1" # ダミーURL
+
+tls:
+  certificates:
+    - certFile: "/etc/traefik/certs/zabbix.crt"
+      keyFile: "/etc/traefik/certs/zabbix.key"
+
