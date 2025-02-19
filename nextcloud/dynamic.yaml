@@ -1,11 +1,11 @@
 tls:
   certificates:
-    - certFile: "/etc/traefik/certs/zabbix.crt" # サーバー証明書と中間証明書を結合したファイル
+    - certFile: "/etc/traefik/certs/zabbix-web.crt" # サーバー証明書と中間証明書を結合したファイル
       keyFile: "/etc/traefik/certs/zabbix.key" # サーバー証明書の秘密鍵
 
   stores:
     default:
       defaultCertificate:
-        certFile: "/etc/traefik/certs/zabbix.crt" # 上記と同じ証明書ファイル
+        certFile: "/etc/traefik/certs/zabbix-web.crt" # 上記と同じ証明書ファイル
         keyFile: "/etc/traefik/certs/zabbix.key" # 上記と同じ秘密鍵
 

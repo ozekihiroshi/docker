@@ -41,6 +41,37 @@ services:
       traefik_network:
         ipv4_address: 192.168.100.61
 
+  self-service-password:
+    image: custom-ssp
+    container_name: self-service-password
+    environment:
+      LDAP_URL: "ldap://staffdc2.staff.gtc.ce.ac.bw"
+      LDAP_BINDDN: "CN=Administrator,DC=staff,DC=gtc,DC=ce,DC=ac,DC=bw"
+      LDAP_BINDPW: "Password1"
+      LDAP_BASE: "DC=staff,DC=gtc,DC=ce,DC=ac,DC=bw"
+      MAIL_SMTP_SERVER: "mail.gtc.ce.ac.bw"
+      MAIL_FROM: "noreply@gtc.ce.ac.bw"
+    volumes:
+      - ./ssp-conf/admin_dashboard.php:/var/www/htdocs/admin_dashboard.php
+      - ./ssp-conf/admin_dashboard.tpl:/var/www/templates/admin_dashboard.tpl
+      - ./ssp-conf/admin_request.php:/var/www/htdocs/admin_request.php
+      - ./ssp-conf/admin_request.tpl:/var/www/templates/admin_request.tpl
+      - ./ssp-conf/update_status.php:/var/www/htdocs/update_status.php
+      - ./ssp-conf/apache2.conf:/etc/apache2/conf-enabled/servername.conf
+      - ./ssp-conf/config.inc.local.php:/var/www/conf/config.inc.local.php
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
+      - "traefik.http.routers.ssp.rule=Host(`ssp.gtc.ce.ac.bw`)"
+      - "traefik.http.routers.ssp.entrypoints=websecure"
+      - "traefik.http.routers.ssp.tls=true"
+      - "traefik.http.services.ssp.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.redirect-to-https.redirectScheme.scheme=https" # リダイレクト用
+    networks:
+      traefik_network:
+        ipv4_address: 192.168.100.62
+
 networks:
   traefik_network:
     external: true
