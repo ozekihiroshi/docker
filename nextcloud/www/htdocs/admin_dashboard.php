@@ -4,8 +4,8 @@ ini_set('display_errors', 1);
 session_start();
 
 require_once(__DIR__ . "/../conf/config.inc.php");
-require_once(__DIR__ . "/../vendor/autoload.php");
-require_once(__DIR__ . "/../lib/functions.inc.php");
+require_once(__DIR__ . "/vendor/autoload.php");
+//require_once(__DIR__ . "/../lib/functions.inc.php");
 
 // LDAPS接続設定
 $ldap_url = "ldaps://staffdc2.gtc.ce.ac.bw:636";  // LDAPSポート
@@ -247,4 +247,3 @@ $smarty->assign('questions_count', isset($questions_count) ? $questions_count : 
 
 
 $smarty->display('admin_dashboard.tpl');
-

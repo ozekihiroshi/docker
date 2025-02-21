@@ -10,8 +10,8 @@ require_once(__DIR__ . "/../conf/config.inc.php");
 #==============================================================================#
 # Includes                                                                    #
 #==============================================================================#
-require_once(__DIR__ . "/../vendor/autoload.php");
-require_once(__DIR__ . "/../lib/functions.inc.php");
+require_once(__DIR__ . "/vendor/autoload.php");
+//require_once(__DIR__ . "/../lib/functions.inc.php");
 
 #==============================================================================#
 # Variables                                                                   #
@@ -21,15 +21,15 @@ $version = "1.7.2"; // システムのバージョン
 #==============================================================================#
 # Language                                                                    #
 #==============================================================================#
-$files = glob(__DIR__ . "/../lang/*.php");
-$languages = str_replace(".inc.php", "", $files);
-$languages = str_replace(__DIR__ . "/../lang/", "", $languages);
-$lang = \Ltb\Language::detect_language($lang, $allowed_lang ? array_intersect($languages, $allowed_lang) : $languages);
-require_once(__DIR__ . "/../lang/$lang.inc.php");
+//$files = glob(__DIR__ . "/../lang/*.php");
+//$languages = str_replace(".inc.php", "", $files);
+//$languages = str_replace(__DIR__ . "/../lang/", "", $languages);
+//$lang = \Ltb\Language::detect_language($lang, $allowed_lang ? array_intersect($languages, $allowed_lang) : $languages);
+//require_once(__DIR__ . "/../lang/$lang.inc.php");
 
-if (file_exists(__DIR__ . "/../conf/$lang.inc.php")) {
-    require_once(__DIR__ . "/../conf/$lang.inc.php");
-}
+//if (file_exists(__DIR__ . "/../conf/$lang.inc.php")) {
+ //   require_once(__DIR__ . "/../conf/$lang.inc.php");
+//}
 
 
 #==============================================================================#

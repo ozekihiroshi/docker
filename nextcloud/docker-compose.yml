@@ -52,11 +52,6 @@ services:
       MAIL_SMTP_SERVER: "mail.gtc.ce.ac.bw"
       MAIL_FROM: "noreply@gtc.ce.ac.bw"
     volumes:
-      - ./ssp-conf/admin_dashboard.php:/var/www/htdocs/admin_dashboard.php
-      - ./ssp-conf/admin_dashboard.tpl:/var/www/templates/admin_dashboard.tpl
-      - ./ssp-conf/admin_request.php:/var/www/htdocs/admin_request.php
-      - ./ssp-conf/admin_request.tpl:/var/www/templates/admin_request.tpl
-      - ./ssp-conf/update_status.php:/var/www/htdocs/update_status.php
       - ./ssp-conf/apache2.conf:/etc/apache2/conf-enabled/servername.conf
       - ./ssp-conf/config.inc.local.php:/var/www/conf/config.inc.local.php
     restart: unless-stopped
