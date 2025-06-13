@@ -1,0 +1,24 @@
+# Nextcloud のデータ類
+data/
+db_data/
+
+# OS / エディタ不要ファイル
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.bak
+
+# Git 管理不要
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# 環境ファイルなど（必要に応じて）
+.env
+.env.*
+

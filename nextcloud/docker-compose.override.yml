@@ -1,0 +1,13 @@
+services:
+  nextcloud:
+    environment:
+      - http_proxy=http://10.97.12.1:3128
+      - https_proxy=http://10.97.12.1:3128
+      - no_proxy=localhost,127.0.0.1,nextcloud,nextcloud-db,192.168.100.0/24,nextcloud.gtc.ce.ac.bw,collabora.gtc.ce.ac.bw
+      - HTTP_PROXY=http://10.97.12.1:3128
+      - HTTPS_PROXY=http://10.97.12.1:3128
+      - NO_PROXY=localhost,127.0.0.1,nextcloud,nextcloud-db,192.168.100.0/24,nextcloud.gtc.ce.ac.bw,collabora.gtc.ce.ac.bw
+
+    extra_hosts:
+      - "nextcloud.gtc.ce.ac.bw:127.0.0.1"
+

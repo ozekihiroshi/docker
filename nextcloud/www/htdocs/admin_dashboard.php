@@ -4,14 +4,18 @@ ini_set('display_errors', 1);
 session_start();
 
 require_once(__DIR__ . "/../conf/config.inc.php");
-require_once(__DIR__ . "/vendor/autoload.php");
-//require_once(__DIR__ . "/../lib/functions.inc.php");
+require_once(__DIR__ . "/../conf/ldap_config.php");
+require_once(__DIR__ . "/../vendor/autoload.php");
+require_once(__DIR__ . '/../vendor/smarty/smarty/libs/Smarty.class.php');
+require_once(__DIR__ . "/../lib/session_common.php");
 
-// LDAPS接続設定
-$ldap_url = "ldaps://staffdc2.gtc.ce.ac.bw:636";  // LDAPSポート
-$ldap_binddn = "CN=Administrator,CN=Users,DC=staff,DC=gtc,DC=ce,DC=ac,DC=bw";
-$ldap_bindpw = "Password1";
-$base_dn = "OU=Admins,DC=staff,DC=gtc,DC=ce,DC=ac,DC=bw";
+check_session_timeout();
+
+// LDAPS接続設定（staff固定）
+$ldap_url = $ldap_servers['staff']['url'];
+$ldap_binddn = $ldap_servers['staff']['bind_dn'];
+$ldap_bindpw = $ldap_servers['staff']['bind_pw'];
+$base_dn = "OU=Admins," . $ldap_servers['staff']['base_dn'];  // 固定OU部分だけ追加
 $search_filter = "(sAMAccountName=hozeki)";
 
 // LDAPS接続を試行
@@ -33,14 +37,15 @@ if (@ldap_bind($ldap_connection, $ldap_binddn, $ldap_bindpw)) {
     die("LDAPS Authentication Failed: " . ldap_error($ldap_connection));
 }
 
+$loggedIn = isset($_SESSION['admin_user']);
 
-if (!isset($_SESSION['admin_user'])) {
+if (!isset($loggedIn)) {
+//if (!isset($_SESSION['admin_user'])) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username = $_POST['username'];
         $password = $_POST['password'];
-        $ldap_admin_dn = "CN=Administrator,CN=Users,DC=staff,DC=gtc,DC=ce,DC=ac,DC=bw";
-        $ldap_admin_password = "Password1";
-
+	$ldap_admin_dn = $ldap_servers['staff']['bind_dn'];
+        $ldap_admin_password = $ldap_servers['staff']['bind_pw'];
         // **LDAP 接続**
         $ldap_conn = ldap_connect($ldap_url);
         ldap_set_option($ldap_conn, LDAP_OPT_PROTOCOL_VERSION, 3);
@@ -219,10 +224,7 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 $mysqli->close();
 
-// Smartyの設定
-require_once(SMARTY);
-
-$smarty = new Smarty();
+$smarty = new Smarty\Smarty();
 $smarty->setTemplateDir(__DIR__ . '/../templates/');
 $smarty->setCompileDir(__DIR__ . '/../templates_c/');
 $smarty->assign('requests', $requests);
@@ -235,8 +237,12 @@ $version = "1.7.2"; // システムのバージョン
 #==============================================================================#
 # Assign Smarty Variables                                                      #
 #==============================================================================#
+$smarty->assign('csrf_token', generate_csrf_token());
+$smarty->assign('loggedIn', $loggedIn);
+$smarty->assign('admin_user', $_SESSION['admin_user'] ?? '');
+
 $smarty->assign('version', $version);
-$smarty->assign('lang', $lang);
+//$smarty->assign('lang', $lang);
 $smarty->assign('requests', $requests);
 $smarty->assign('custom_css', isset($custom_css) ? $custom_css : '');
 $smarty->assign('background_image', isset($background_image) ? $background_image : '');

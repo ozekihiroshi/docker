@@ -1,1 +1,22 @@
-docker-compose.override.yml
+# Certificates
+certs/*.key
+certs/*.crt
+certs/*.pem
+
+# Database volumes
+db_data/
+data/
+
+# OS・IDE junk
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+*.log
+
+# Docker secrets or hash tools
+tools/hashPassword.js
+
+# Optional: elasticsearch configs (if environment-specific)
+elasticsearch/**/config/
+

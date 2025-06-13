@@ -11,6 +11,12 @@ services:
       - ./data:/var/www/html
       - ./php/php.ini:/usr/local/etc/php/php.ini
       - ./sites-available/000-default.conf:/etc/apache2/sites-available/000-default.conf
+      - ./certs:/usr/local/share/ca-certificates/gtc
+    entrypoint: >
+      sh -c "cp -r /usr/local/share/ca-certificates/gtc /usr/share/ca-certificates/gtc &&
+            update-ca-certificates &&
+            apache2-foreground"
+
     depends_on:
       - nextcloud-db
     restart: unless-stopped
@@ -42,7 +48,7 @@ services:
         ipv4_address: 192.168.100.61
 
   self-service-password:
-    image: custom-ssp
+    image: my-custom-php
     container_name: self-service-password
     environment:
       LDAP_URL: "ldap://staffdc2.staff.gtc.ce.ac.bw"
@@ -52,8 +58,13 @@ services:
       MAIL_SMTP_SERVER: "mail.gtc.ce.ac.bw"
       MAIL_FROM: "noreply@gtc.ce.ac.bw"
     volumes:
-      - ./ssp-conf/apache2.conf:/etc/apache2/conf-enabled/servername.conf
-      - ./ssp-conf/config.inc.local.php:/var/www/conf/config.inc.local.php
+      - ./ssp-conf/000-default.conf:/etc/apache2/sites-enabled/000-default.conf
+      - ./ssp-conf/config.inc.php:/var/www/conf/config.inc.php
+      - ./ssp-conf/ldap_config.php:/var/www/conf/ldap_config.php
+      - ./templates:/var/www/templates
+      - ./www/htdocs:/var/www/html
+      - ./www/lib:/var/www/lib
+      - ./www/conf:/var/www/conf
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
@@ -66,6 +77,25 @@ services:
     networks:
       traefik_network:
         ipv4_address: 192.168.100.62
+
+  collabora-online:
+    image: collabora/code
+    container_name: collabora-online
+    restart: unless-stopped
+    environment:
+      - domain=nextcloud\\.gtc\\.ce\\.ac\\.bw
+      - server_name=collabora.gtc.ce.ac.bw
+      - extra_params=--o:ssl.termination=true --o:ssl.enable=false --o:welcome.enable=false --o:net.post_allow.host=nextcloud.gtc.ce.ac.bw
+    networks:
+      traefik_network:
+        ipv4_address: 192.168.100.52
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
+      - "traefik.http.routers.collabora.rule=Host(`collabora.gtc.ce.ac.bw`)"
+      - "traefik.http.routers.collabora.entrypoints=websecure"
+      - "traefik.http.routers.collabora.tls=true"
+      - "traefik.http.services.collabora.loadbalancer.server.port=9980"
 
 networks:
   traefik_network:

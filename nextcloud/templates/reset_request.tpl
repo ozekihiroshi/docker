@@ -1,88 +1,120 @@
-{include file="header.tpl"}
+{extends file="adminlte_base.tpl"}
 
-<!-- ナビゲーションリンク -->
-<div class="nav-links">
-    <a href="change_password.php">Change Password</a>
-    <a href="reset_request.php">ResetPassword Request</a>
-    <a href="admin_dashboard.php">Admin dashboard</a>
-</div>
+{block name="content"}
 
-<div class="card card-success shadow">
-    <div class="card-body">
-        <h2 class="text-center">Password Reset Request</h2>
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-12 text-center">
+        <h1>Password Reset Request</h1>
+        <p>Please fill in the form below to request a password reset.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-        {if $error != ""}
-            <div class="alert alert-danger">
-                <i class="fa fa-exclamation-circle"></i> {$error}
-            </div>
-        {/if}
+<section class="content">
+  <div class="container-fluid">
+    <div class="row justify-content-center">
 
-        {if $success != ""}
-            <div class="alert alert-success">
-                <i class="fa fa-check-circle"></i> {$success}
-            </div>
-        {/if}
+      <!-- パスワードリセットフォーム -->
+      <div class="col-md-6">
+        <div class="card card-primary">
+          <div class="card-body">
 
-        {if $success_message != ""}
-            <div class="alert alert-success">
-                <i class="fa fa-check-circle"></i> {$success_message}
-            </div>
-        {/if}
+            {if $error}
+              <div class="alert alert-danger">
+                {$error}
+              </div>
+            {/if}
 
-        <form action="reset_request.php" method="post" class="mt-4">
-            <div class="mb-3">
-                <label class="form-label">User Type</label><br>
-                <input type="radio" name="user_type" value="student" required> Student
-                <input type="radio" name="user_type" value="staff" required> Staff
-            </div>
+            {if $success_message}
+              <div class="alert alert-success">
+                {$success_message}
+              </div>
+            {/if}
 
-            <div class="mb-3">
+            <form method="POST" action="reset_request.php">
+              <input type="hidden" name="csrf_token" value="{$csrf_token}">
+
+              <div class="mb-3">
+                <label for="user_type" class="form-label">User Type</label>
+                <select name="user_type" id="user_type" class="form-control" required>
+                  <option value="">Select User Type</option>
+                  <option value="staff">Staff</option>
+                  <option value="student">Student</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
                 <label for="department" class="form-label">Department</label>
                 <select name="department" id="department" class="form-control" required>
-                    <option value="">Select Department</option>
-                    {foreach from=$departments item=department}
-                        <option value="{$department}">{$department}</option>
-                    {/foreach}
+                  {foreach from=$departments item=dept}
+                    <option value="{$dept}">{$dept}</option>
+                  {/foreach}
                 </select>
-            </div>
+              </div>
 
-            <div class="mb-3">
-                <label for="userAccount" class="form-label">User Account</label>
+              <div class="mb-3">
+                <label for="userAccount" class="form-label">Username</label>
                 <input type="text" name="userAccount" id="userAccount" class="form-control" required>
-            </div>
+              </div>
 
-            <button type="submit" class="btn btn-primary">Request Password Reset</button>
-        </form>
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+              </div>
 
-        <hr>
+            </form>
 
-        <h3 class="mt-4">Pending Requests</h3>
-        <table class="table table-striped mt-2">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>User Type</th>
-                    <th>Department</th>
-                    <th>User Account</th>
-                    <th>Status</th>
-                    <th>Created At</th>
-                </tr>
-            </thead>
-            <tbody>
-                {foreach from=$requests item=request}
-                <tr>
-                    <td>{$request.id}</td>
-                    <td>{$request.user_type}</td>
-                    <td>{$request.department}</td>
-                    <td> ***** </td>
-                    <td>{$request.status}</td>
-                    <td>{$request.created_at}</td>
-                </tr>
-                {/foreach}
-            </tbody>
-        </table>
+          </div>
+        </div>
+      </div>
+
     </div>
-</div>
 
-{include file="footer.tpl"}
+    <!-- ペンディングリクエスト一覧 -->
+    <div class="row justify-content-center mt-4">
+
+      <div class="col-md-10">
+        <div class="card card-info">
+          <div class="card-header">
+            <h3 class="card-title">Pending Requests</h3>
+          </div>
+
+          <div class="card-body table-responsive p-0">
+            <table class="table table-hover text-nowrap">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>User Account</th>
+                  <th>User Type</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Created At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {foreach from=$requests item=req}
+                  <tr>
+                    <td>{$req.id}</td>
+                    <td>*******</td>
+                    <td>{$req.user_type}</td>
+                    <td>{$req.department}</td>
+                    <td>{$req.status}</td>
+                    <td>{$req.created_at}</td>
+                  </tr>
+                {/foreach}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+{/block}
 

@@ -1,0 +1,10 @@
+{
+    "require": {
+        "monolog/monolog": "1.0.*",
+        "phpoffice/phpspreadsheet": "^1.23",
+        "smarty/smarty": "^4.0"
+    },
+     "config": {
+        "vendor-dir": "/var/www/vendor"
+    }
+}

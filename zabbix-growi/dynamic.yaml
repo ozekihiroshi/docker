@@ -22,6 +22,6 @@ http:
 
 tls:
   certificates:
-    - certFile: "/etc/traefik/certs/zabbix-web.crt"
-      keyFile: "/etc/traefik/certs/zabbix.key"
+    - certFile: "/etc/traefik/certs/fullchain.pem"
+      keyFile: "/etc/traefik/certs/portal.key"
 

@@ -1,106 +1,80 @@
-{include file="header.tpl"}
-<!-- ナビゲーションリンク -->
-<div class="nav-links">
-    <a href="change_password.php">Change Password</a>
-    <a href="reset_request.php">Password Reset Request</a>
-    <a href="admin_dashboard.php">Admin Dashboard</a>
-</div>
-{block name="scripts"}
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Bootstrap 5 の JavaScript を正しく読み込む -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $(".request-row").click(function() {
-                var requestId = $(this).data("id");
-                var username = $(this).data("username");
-                var user_type = $(this).data("user_type");
-
-                $("#request_id").val(requestId);
-                $("#username").val(username);
-                $("#user_type").val(user_type);
-                $("#modal-username").text(username);
-
-                // Bootstrap 5のモーダルの開き方
-                var modalElement = document.getElementById("passwordResetModal");
-                var modal = new bootstrap.Modal(modalElement);
-                modal.show();
-            });
-
-            // パスワードリセット処理
-            $("#passwordResetForm").submit(function (e) {
-                e.preventDefault();
-
-                $.ajax({
-                    url: "reset_password.php",
-                    type: "POST",
-                    data: $(this).serialize(),
-                    success: function (response) {
-                        alert(response);  // 成功メッセージを表示
-                        var modalElement = document.getElementById("passwordResetModal");
-                        var modal = bootstrap.Modal.getInstance(modalElement);
-                        modal.hide(); // モーダルを閉じる
-                        location.reload();  // ページをリロードしてステータスを更新
-                    },
-                    error: function () {
-                        alert("Password reset failed.");
-                    }
-                });
-            });
-        });
-    </script>
-{/block}
-
+{extends file='adminlte_base.tpl'}
+{block name="title"}Admin Dashboard{/block}
 {block name="content"}
-    <!-- リクエスト一覧 -->
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>User Type</th>
-                <th>Request Details</th>
-                <th>Status</th>
-                <th>Created At</th>
-            </tr>
-        </thead>
-        <tbody>
-            {foreach from=$requests item=request}
-                <tr class="request-row" data-id="{$request.id}" data-username="{$request.userAccount}" data-user_type="{$request.user_type}">
-                    <td>{$request.id}</td>
-                    <td>{if isset($request.userAccount)}{$request.userAccount}{else}N/A{/if}</td>
-                    <td>{$request.user_type}</td>
-                    <td>{if isset($request.request_details)}{$request.request_details}{else}N/A{/if}</td>
-                    <td>{$request.status}</td>
-                    <td>{$request.created_at}</td>
-                </tr>
-            {/foreach}
-        </tbody>
-    </table>
-{/block}
 
-<!-- パスワードリセットのモーダル -->
-<div id="passwordResetModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Password Reset for <span id="modal-username"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="passwordResetForm">
-                    <input type="hidden" id="request_id" name="request_id">
-                    <input type="hidden" id="username" name="username">
-                    <input type="hidden" id="user_type" name="user_type">
-                    <div class="form-group">
-                        <label for="new_password">New Password</label>
-                        <input type="password" id="new_password" name="new_password" class="form-control" required>
-                    </div>
+<section class="content-header">
+  <h1>Admin Dashboard</h1>
+</section>
 
-                    <button type="submit" class="btn btn-primary">Reset Password</button>
-                </form>
-            </div>
+<section class="content">
+  <div class="row">
+
+    <!-- Password Operations -->
+    <div class="col-md-6">
+      <div class="card card-success">
+        <div class="card-header">
+          <h3 class="card-title">Password Reset Management</h3>
         </div>
+        <div class="card-body">
+          <p>View reset requests and process password changes.</p>
+          <a href="update_password.php" class="btn btn-success">Manage Requests</a>
+        </div>
+      </div>
     </div>
-</div>
-{include file="footer.tpl"}
+
+    <!-- Bulk User Import -->
+    <div class="col-md-6">
+      <div class="card card-info">
+        <div class="card-header">
+          <h3 class="card-title">Bulk User Import</h3>
+        </div>
+        <div class="card-body">
+          <p>Upload Excel files to register multiple AD users.</p>
+          <a href="ldap_user_import.php" class="btn btn-info">Import Users</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inactive User Search -->
+    <div class="col-md-6">
+      <div class="card card-warning">
+        <div class="card-header">
+          <h3 class="card-title">Inactive User Search</h3>
+        </div>
+        <div class="card-body">
+          <p>Find users who haven't logged in for a defined period and disable them in bulk.</p>
+          <a href="inactive_users.php" class="btn btn-warning">Search Inactive Users</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reactivate Disabled Users -->
+    <div class="col-md-6">
+      <div class="card card-secondary">
+        <div class="card-header">
+          <h3 class="card-title">Reactivate Disabled Users</h3>
+        </div>
+        <div class="card-body">
+          <p>Search disabled users and enable them again if needed.</p>
+          <a href="reactivate_users.php" class="btn btn-secondary">Search Disabled Users</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deleted User Archive (DB) -->
+    <div class="col-md-6">
+      <div class="card card-danger">
+        <div class="card-header">
+          <h3 class="card-title">Deleted User Archive</h3>
+        </div>
+        <div class="card-body">
+          <p>View and restore archived deleted users.</p>
+          <a href="view_deleted_users.php" class="btn btn-danger">View Deleted Users</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{/block}
