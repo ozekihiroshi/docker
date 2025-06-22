@@ -32,6 +32,16 @@ services:
       traefik_network:
         ipv4_address: 192.168.100.51
 
+  nextcloud-cron:
+    image: nextcloud
+    container_name: nextcloud-cron
+    restart: always
+    volumes:
+      - ./data:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - nextcloud
+
   nextcloud-db:
     image: mariadb:latest
     container_name: nextcloud-db
